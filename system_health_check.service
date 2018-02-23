@@ -1,0 +1,11 @@
+[Unit]
+Description=System Health Check Deamon
+After=network-online.target
+
+[Service]
+User=root
+Type=simple
+ExecStart=/usr/bin/python /usr/bin/system_health_check.py
+
+[Install]
+WantedBy=multi-user.target

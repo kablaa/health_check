@@ -1,3 +1,4 @@
+#!/usr/bin/python -p
 import subprocess
 import boto3
 import time
@@ -5,7 +6,7 @@ from botocore.exceptions import ClientError
 
 # Replace sender@example.com with your "From" address.
 # This address must be verified with Amazon SES.
-SENDER = "root@abortion"
+SENDER = "abortion@hackmy.world"
 
 # Replace recipient@example.com with a "To" address. If your account
 # is still in the sandbox, this address must be verified.
@@ -14,7 +15,7 @@ RECIPIENT = "kablaa@hackmy.world"
 # Specify a configuration set. If you do not want to use a configuration
 # set, comment the following variable, and the
 # ConfigurationSetName=CONFIGURATION_SET argument below.
-CONFIGURATION_SET = "/home/root/.aws"
+CONFIGURATION_SET = "server-health"
 
 # If necessary, replace us-west-2 with the AWS Region you're using for Amazon SES.
 AWS_REGION = "us-west-2"
@@ -118,10 +119,13 @@ def sendEmail(body):
 	"""sends an email via aws SES"""
 
 def main():
-    systemHealth = getSystemHealth()
-    zpoolHealth = getZpoolHealth()
-    body = makeEmailBody(systemHealth,zpoolHealth)
-    sendEmail(body)
+    while True:
+        systemHealth = getSystemHealth()
+        zpoolHealth = getZpoolHealth()
+        body = makeEmailBody(systemHealth,zpoolHealth)
+        sendEmail(body)
+        time.sleep(60*60*24)
+
 
 
 if __name__ == "__main__":
