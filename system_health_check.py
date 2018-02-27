@@ -39,14 +39,26 @@ def subProcessCommand(cmd):
 
 def getSystemHealth():
     """returns a string containing the health of the zpool array"""
+    command = ["ipmitool","sdr","list"]
+    return subProcessCommand(command)
+def getCPUTemps():
+    """returns a string containing the health of the zpool array"""
     command = ["sensors"]
     return subProcessCommand(command)
 def getZpoolHealth():
     """returns a string containing sensor readings"""
     command = ["zpool","status"]
     return subProcessCommand(command)
+def getRaidControllerHealth():
+    command = ["tw_cli","/c0","show"]
+    return subProcessCommand(command)
+def getSmbStatus():
+    command = ["smbstatus"]
+    return subProcessCommand(command)
 
-def makeEmailBody(systemHealth,zpoolHealth):
+
+
+def makeEmailBody(systemHealth,cpuTemps,raidControllerHealth,zpoolHealth,smbStatus):
     """compiles all of the information to be sent in a nice format and
     returns the email body"""
 # The HTML body of the email.
@@ -56,14 +68,23 @@ def makeEmailBody(systemHealth,zpoolHealth):
         <head><h1>System Health Check</h1></head>
         <body>
           <p>This check was performed on: """ + time.ctime() + """</p>
-          <h2>Begin Zpool Health Status</h2>
+          <h2>System Health Status</h2>
+          <pre>
+          """+ systemHealth +"""
+          """+ cpuTemps +"""
+          </pre>
+          <h2>Raid Controller Controller Health</h2>
+          <pre>
+          """+ raidControllerHealth +"""
+          </pre>
+          <h2>Zpool Health Status</h2>
             <pre>
             """ + zpoolHealth + """
             </pre>
-          <h2>Begin CPU Health Status</h2>
-          <pre>
-          """+ systemHealth +"""
-          </pre>
+          <h2>SMB Status</h2>
+            <pre>
+            """ + smbStatus + """
+            </pre>
         </body>
     </html>
     """
@@ -71,8 +92,10 @@ def makeEmailBody(systemHealth,zpoolHealth):
     bodyText = (
             "System Health Check \n\n"
             "This check was performed on: " + time.ctime() + " \n\n" +
+            "System Health: \n" + systemHealth + "\n\n" + cpuTemps + "\n\n"
+            "Raid Controller Controller: \n" + raidControllerHealth +
             "Zpool Health: \n" + zpoolHealth +
-            "\nSystem Health: \n" + systemHealth
+            "Samba Status: \n" + smbStatus
             )
     final.append(bodyText)
     return final
@@ -121,8 +144,11 @@ def sendEmail(body):
 def main():
     while True:
         systemHealth = getSystemHealth()
+        cpuTemps = getCPUTemps()
         zpoolHealth = getZpoolHealth()
-        body = makeEmailBody(systemHealth,zpoolHealth)
+        raidControllerHealth = getRaidControllerHealth()
+        smbStatus = getSmbStatus()
+        body = makeEmailBody(systemHealth,cpuTemps,raidControllerHealth,zpoolHealth,smbStatus)
         sendEmail(body)
         time.sleep(60*60*24)
 
