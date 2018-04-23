@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 
 # Replace sender@example.com with your "From" address.
 # This address must be verified with Amazon SES.
-SENDER = "abortion@hackmy.world"
+SENDER = "omega@hackmy.world"
 
 # Replace recipient@example.com with a "To" address. If your account
 # is still in the sandbox, this address must be verified.
@@ -27,63 +27,34 @@ SUBJECT = "System Health Check"
 CHARSET = "UTF-8"
 
 
-def subProcessCommand(cmd):
-    """opens a subprocess, issues the command passed as an argument,
-    and reutnrs the result takes a list as an argument"""
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+
+def getZpoolHealth():
+    """returns a string containing sensor readings"""
+    command = ["zpool","status","-x"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
     out, err = process.communicate()
     if err is None:
         return out
     else:
         return "An error occurred while retrieving system info: " + err
-
-def getSystemHealth():
-    """returns a string containing the health of the zpool array"""
-    command = ["ipmitool","sdr","list"]
-    return subProcessCommand(command)
-def getCPUTemps():
-    """returns a string containing the health of the zpool array"""
-    command = ["sensors"]
-    return subProcessCommand(command)
-def getZpoolHealth():
-    """returns a string containing sensor readings"""
-    command = ["zpool","status"]
-    return subProcessCommand(command)
-def getRaidControllerHealth():
-    command = ["tw_cli","/c0","show"]
-    return subProcessCommand(command)
-def getSmbStatus():
-    command = ["smbstatus"]
-    return subProcessCommand(command)
+    return out
 
 
 
-def makeEmailBody(systemHealth,cpuTemps,raidControllerHealth,zpoolHealth,smbStatus):
+def makeEmailBody(zpoolHealth):
     """compiles all of the information to be sent in a nice format and
     returns the email body"""
 # The HTML body of the email.
     final = []
     bodyHTML = """
     <html>
-        <head><h1>System Health Check</h1></head>
+        <head><h1>Warning! Zpool Health is Degraded!</h1></head>
         <body>
           <p>This check was performed on: """ + time.ctime() + """</p>
-          <h2>System Health Status</h2>
-          <pre>
-          """+ systemHealth +"""
-          """+ cpuTemps +"""
-          </pre>
-          <h2>Raid Controller Controller Health</h2>
-          <pre>
-          """+ raidControllerHealth +"""
-          </pre>
           <h2>Zpool Health Status</h2>
             <pre>
             """ + zpoolHealth + """
-            </pre>
-          <h2>SMB Status</h2>
-            <pre>
-            """ + smbStatus + """
             </pre>
         </body>
     </html>
@@ -92,10 +63,7 @@ def makeEmailBody(systemHealth,cpuTemps,raidControllerHealth,zpoolHealth,smbStat
     bodyText = (
             "System Health Check \n\n"
             "This check was performed on: " + time.ctime() + " \n\n" +
-            "System Health: \n" + systemHealth + "\n\n" + cpuTemps + "\n\n"
-            "Raid Controller Controller: \n" + raidControllerHealth +
-            "Zpool Health: \n" + zpoolHealth +
-            "Samba Status: \n" + smbStatus
+            "Zpool Health: \n" + zpoolHealth
             )
     final.append(bodyText)
     return final
@@ -143,16 +111,11 @@ def sendEmail(body):
 
 def main():
     while True:
-        systemHealth = getSystemHealth()
-        cpuTemps = getCPUTemps()
         zpoolHealth = getZpoolHealth()
-        raidControllerHealth = getRaidControllerHealth()
-        smbStatus = getSmbStatus()
-        body = makeEmailBody(systemHealth,cpuTemps,raidControllerHealth,zpoolHealth,smbStatus)
-        sendEmail(body)
+        if zpoolHealth != "all pools are healthy\n":
+            body = makeEmailBody(zpoolHealth)
+            sendEmail(body)
         time.sleep(60*60*24)
-
-
 
 if __name__ == "__main__":
         main()
