@@ -38,7 +38,6 @@ def getZpoolHealth():
         return out
     else:
         return "An error occurred while retrieving system info: " + err
-    return out
 
 
 
